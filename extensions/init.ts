@@ -2,6 +2,7 @@ import { getSupportedThinkingLevels, type Model } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import * as path from "node:path";
+import { renderInitPrompt } from "../src/init-prompt.ts";
 import { runInitWorkflow } from "../src/workflow.ts";
 import { findRepositoryRoot } from "../src/discovery.ts";
 import { isInitialized, readConfig } from "../src/config.ts";
@@ -37,10 +38,10 @@ export default function initExtension(pi: ExtensionAPI) {
     pi.sendMessage({ customType: "pi-workflow", content: text, display: true });
     ctx.ui.notify(text.split("\n")[0], "info");
   }
-  function registerCommand(name: string, description: string, handler: (args: string, ctx: ExtensionCommandContext) => Promise<void>) {
+  function registerCommand(name: string, description: string, handler: (args: string, ctx: ExtensionCommandContext) => Promise<void>, options: { rawArguments?: boolean } = {}) {
     pi.registerCommand(name, { description, handler: async (args, ctx) => {
       if (!ctx.isIdle()) { ctx.ui.notify("Wait for the current turn or cancel it before changing workflow mode.", "warning"); return; }
-      try { await handler(args.trim(), ctx); }
+      try { await handler(options.rawArguments ? args : args.trim(), ctx); }
       catch (error) { ctx.ui.notify(error instanceof Error ? error.message : String(error), "error"); }
     } });
   }
@@ -63,9 +64,9 @@ export default function initExtension(pi: ExtensionAPI) {
     finally { signal?.removeEventListener("abort", abort); controllers.delete(controller); }
   }
 
-  registerCommand("init", "Initialize repository-level Sergeant and Worker configuration and project workflow", async (args, ctx) => {
+  registerCommand("init", "Initialize repository-level Sergeant and Worker configuration and project workflow: /init [instructions]", async (args, ctx) => {
     if (!ctx.hasUI) throw new Error("/init requires an interactive Pi UI.");
-    if (args && args !== "--quick") throw new Error("Usage: /init [--quick]");
+    const quick = args.trim() === "--quick";
     const scoped = new Set(ctx.scopedModels.map(({ model }) => `${model.provider}/${model.id}`));
     const models = ctx.modelRegistry.getAvailable().filter(model => !scoped.size || scoped.has(`${model.provider}/${model.id}`));
     const root = rootOf(ctx);
@@ -74,10 +75,10 @@ export default function initExtension(pi: ExtensionAPI) {
     });
     if (result.status === "cancelled") { ctx.ui.notify("Initialization cancelled; no files were changed.", "info"); return; }
     await activate(ctx, root);
-    setMode({ root, stage: args === "--quick" ? "idle" : "init" });
+    setMode({ root, stage: quick ? "idle" : "init" });
     report(ctx, `Initialized workflow in ${root}.\nUse /plan <id> <request>, /apply <id>, /verify <id>, /archive <id>, and /status. Load this package again in future sessions (pi -e <package-path> or install it).`);
-    if (args !== "--quick") pi.sendUserMessage("Initialize reusable project understanding. Read .pi/PROJECT.md, existing repository instructions, README, relevant build/CI manifests and representative source files. Establish architecture and module responsibilities, conventions, setup, focused verification commands, and pitfalls with file references. Keep unsupported conclusions explicitly unknown. Save concise guidance in the user's language with pi_project_context. This is read-only repository research, not an implementation task. Do not run shell commands or change source files.");
-  });
+    if (!quick) pi.sendUserMessage(renderInitPrompt(args));
+  }, { rawArguments: true });
   registerCommand("plan", "Research and save a document-first change: /plan <id> <request>", async (args, ctx) => {
     const parsed = parseArgs(args);
     const id = parsed.id ?? selectedId("", ctx);

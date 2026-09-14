@@ -28,7 +28,7 @@ Keep loading the package in future sessions, or register this local package with
 
 | Command | Effect |
 | --- | --- |
-| `/init` | Choose models and supported thinking levels, show a summary before writing, build repository context, activate Sergeant, then research important files and save concise project guidance. |
+| `/init [instructions]` | Choose models and supported thinking levels, show a summary before writing, build repository context, activate Sergeant, then research important files and save concise project guidance. |
 | `/init --quick` | Write configuration and a bounded local inventory, activate Sergeant, and skip the model-driven project research. |
 | `/plan <id> <request>` | Research without source writes or shell commands; save proposal, design, behavioral spec and ordered scoped tasks. Stop for the user to review. |
 | `/plan <id> [revision instructions]` | Reconcile existing plan edits, retain the previous revision and evidence, and invalidate prior approval/verification. |
@@ -37,6 +37,12 @@ Keep loading the package in future sessions, or register this local package with
 | `/status [id]` | List active changes or show progress, attempts and the next command. |
 | `/archive <id>` | Require successful verification of unchanged documents/source; retain the accepted spec and move the change to archive. |
 | `/workflow-exit` | Leave command-specific tool restrictions while preserving all saved change progress. |
+
+`/init` accepts the entire following text as one argument string and substitutes it into `$ARGUMENTS` in the built-in prompt (`src/init-prompt.ts`). The text received from Pi is preserved, including whitespace, newlines, quotes and dollar signs; it is not split into positional arguments or evaluated as shell syntax. With no instructions, `$ARGUMENTS` becomes an empty string. Only a standalone `--quick` (ignoring surrounding whitespace) retains the quick-initialization behavior; `--quick` within a longer instruction is ordinary text.
+
+```text
+/init 请使用中文整理项目说明，重点分析插件扩展机制和测试流程
+```
 
 `/apply`, `/verify`, and `/archive` may omit the id when the current session already selected a change. IDs use lowercase letters, digits and hyphens. The language of the request should be used in generated plans and reports.
 
