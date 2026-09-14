@@ -11,10 +11,10 @@ Requires Node >=22.19 and `@earendil-works/pi-coding-agent` / `pi-ai` >=0.85.1. 
 npm install
 
 # Start Pi from the project you want to work on
-pi -e /home/summerrain/pi_work/pi_plugins
+pi -e /path/to/pi_plugins
 ```
 
-Keep loading the package in future sessions, or register this local package with `pi install /home/summerrain/pi_work/pi_plugins`. `/init` creates project configuration; it does not install the extension globally. If updating an already running Pi session, use `/reload` before invoking the new commands.
+Replace `/path/to/pi_plugins` with the directory where you cloned this package. Keep loading the package in future sessions, or register the local package with `pi install /path/to/pi_plugins`. `/init` creates project configuration; it does not install the extension globally. If updating an already running Pi session, use `/reload` before invoking the new commands.
 
 ## Everyday workflow
 
